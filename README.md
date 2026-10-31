@@ -5,11 +5,12 @@ A fully offline, privacy-focused Retrieval-Augmented Generation (RAG) applicatio
 ## 🚀 Features
 * **100% Offline & Private:** No API keys required. All document processing, embedding, and inference happens locally on your machine.
 * **Modern LangChain Architecture:** Utilizes LangChain Expression Language (LCEL) for a clean, modular, and highly readable retrieval and generation pipeline.
-* **Efficient Vector Retrieval:** Chunks and embeds massive PDFs (700+ pages) into a persistent local ChromaDB instance for fast semantic search.
+* **Interactive Web Interface:** Provides a responsive chatbot UI built with Streamlit.
+* **Efficient Vector Retrieval:** Chunks and embeds massive PDFs into a persistent local ChromaDB instance for fast semantic search.
 
 ## 🛠️ Tech Stack
 * **Language:** Python
-* **Framework:** LangChain (LCEL)
+* **Framework:** LangChain (LCEL), Streamlit
 * **Vector Database:** ChromaDB
 * **Local LLM Engine:** Ollama
 * **Embedding Model:** `nomic-embed-text`
@@ -31,7 +32,7 @@ venv\Scripts\activate
 
 3. **Install dependencies**
 ```bash
-pip install langchain-chroma langchain-ollama langchain-core chromadb pypdf
+pip install streamlit langchain-chroma langchain-ollama langchain-core chromadb pypdf
 ```
 
 4. **Download local AI models via Ollama**
@@ -48,8 +49,14 @@ Place your target PDF in the `data/` folder (e.g., `data/sample.pdf`). Run the i
 python app.py
 ```
 
-**2. Querying the Document**
-Run the query script to retrieve answers based on the embedded PDF chunks.
+**2. Web Interface (Streamlit)**
+Launch the interactive browser-based chat interface.
+```bash
+streamlit run webapp.py
+```
+
+**3. Terminal Query (Optional)**
+Run the query script to retrieve answers directly in your terminal.
 ```bash
 python query.py
 ```
