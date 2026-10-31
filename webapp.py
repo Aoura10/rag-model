@@ -1,13 +1,44 @@
 import streamlit as st
+import os
+import tempfile
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings, OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 
+st.set_page_config(page_title="RAG Chatbot", layout="wide")
 st.title("📄 Local PDF RAG Chatbot")
 
-# Cache the database and model loading to optimize speed
+# --- Sidebar for Document Upload ---
+with st.sidebar:
+    st.header("📂 Upload Document")
+    uploaded_file = st.file_uploader("Upload a new PDF to the database", type=["pdf"])
+    
+    if uploaded_file is not None:
+        if st.button("Process PDF"):
+            with st.spinner("Chunking and embedding document... This may take a minute."):
+                # Save the uploaded file temporarily to read it
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+                    temp_file.write(uploaded_file.read())
+                    temp_filepath = temp_file.name
+                
+                # Load and split the text
+                loader = PyPDFLoader(temp_filepath)
+                docs = loader.load()
+                text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+                chunks = text_splitter.split_documents(docs)
+                
+                # Embed and save to ChromaDB
+                embeddings = OllamaEmbeddings(model="nomic-embed-text")
+                Chroma.from_documents(documents=chunks, embedding=embeddings, persist_directory="chroma_db")
+                
+                st.success(f"Successfully processed {len(chunks)} chunks!")
+                os.remove(temp_filepath) # Clean up temporary file
+
+# --- Main RAG Pipeline ---
 @st.cache_resource
 def load_rag_pipeline():
     embeddings = OllamaEmbeddings(model="nomic-embed-text")
@@ -39,25 +70,21 @@ def load_rag_pipeline():
 
 rag_chain = load_rag_pipeline()
 
-# Initialize session state for chat history
+# --- Chat Interface ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display previous chat messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Chat input box for the user
-if user_input := st.chat_input("Ask a question about your PDF..."):
-    # Display the user's question
+if user_input := st.chat_input("Ask a question about your documents..."):
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Generate and display the AI's response
     with st.chat_message("assistant"):
-        with st.spinner("Searching PDF and generating answer..."):
+        with st.spinner("Thinking..."):
             response = rag_chain.invoke(user_input)
             st.markdown(response)
     st.session_state.messages.append({"role": "assistant", "content": response})
